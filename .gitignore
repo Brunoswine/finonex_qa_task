@@ -1,3 +1,5 @@
 .wdio/session/
 .env
 /node_modules
+allure-results/
+allure-report/

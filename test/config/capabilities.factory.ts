@@ -15,6 +15,8 @@ export interface RunProfile
     maxInstances: number;
     /** Target-specific WDIO hooks, e.g. simulator setup or reporting results to a cloud. */
     hooks: SessionHooks;
+    /** Where the run happens, in words, for the Environment block of the Allure report. */
+    environment: Record<string, string>;
 }
 
 const PROJECT_ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -25,6 +27,9 @@ const PLATFORM_CAPABILITIES: Record<Platform, WebdriverIO.Capabilities> = {
         platformName: 'Android',
         'appium:automationName': 'UiAutomator2',
         'appium:appPackage': APP.android.appPackage,
+        // The launcher is a splash screen that hands over to MainActivity at once, so the
+        // driver must not wait for the splash. Readiness is checked by LoginScreen instead.
+        'appium:appWaitActivity': '*',
     },
     ios: {
         platformName: 'iOS',
@@ -34,8 +39,8 @@ const PLATFORM_CAPABILITIES: Record<Platform, WebdriverIO.Capabilities> = {
 };
 
 const APP_EXTENSIONS: Record<Platform, readonly string[]> = {
-    android: ['.apk', '.aab'],
-    ios: ['.ipa', '.app', '.zip'],
+    android: ['.apk'],
+    ios: ['.ipa'],
 };
 
 interface BrowserStackDevice {
@@ -96,6 +101,11 @@ function localProfile(platform: Platform): RunProfile {
     const onIosSimulator = platform === 'ios' && udid !== undefined && isIosSimulator(udid);
     return {
         hooks: onIosSimulator ? { before: useEnglishSimulatorKeyboard } : {},
+        environment: {
+            Target: 'local Appium',
+            Platform: platform,
+            Device: udid ? `${udid}${onIosSimulator ? ' (simulator)' : ''}` : 'first connected device',
+        },
         capabilities: [{
             ...PLATFORM_CAPABILITIES[platform],
             'appium:app': resolveLocalApp(platform),
@@ -115,6 +125,8 @@ function browserStackProfile(platform: Platform): RunProfile {
         throw new Error(`BrowserStack app must be an uploaded app id (bs://...), got "${app}".`);
     }
     const device = BROWSERSTACK_DEFAULT_DEVICE[platform];
+    const deviceName = settings.deviceName ?? device.deviceName;
+    const platformVersion = settings.platformVersion ?? device.platformVersion;
     return {
         protocol: 'https',
         hostname: 'hub.browserstack.com',
@@ -125,8 +137,8 @@ function browserStackProfile(platform: Platform): RunProfile {
         capabilities: [{
             ...PLATFORM_CAPABILITIES[platform],
             'appium:app': app,
-            'appium:deviceName': settings.deviceName ?? device.deviceName,
-            'appium:platformVersion': settings.platformVersion ?? device.platformVersion,
+            'appium:deviceName': deviceName,
+            'appium:platformVersion': platformVersion,
             'bstack:options': {
                 appiumVersion: device.appiumVersion,
                 projectName: 'Swag Labs',
@@ -136,6 +148,12 @@ function browserStackProfile(platform: Platform): RunProfile {
         }],
         services: [],
         hooks: browserStackStatusHooks(),
+        environment: {
+            Target: 'BrowserStack',
+            Platform: platform,
+            Device: `${deviceName}, ${platform === 'ios' ? 'iOS' : 'Android'} ${platformVersion}`,
+            Appium: device.appiumVersion,
+        },
         maxInstances: 1,
     };
 }

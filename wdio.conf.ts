@@ -1,8 +1,9 @@
 import { createRunProfile } from './test/config/capabilities.factory.js';
+import { attachScreenshot, labelTestWithDevice } from './test/reporting/allure.js';
 
 // Where and on what to run (local Appium / BrowserStack, Android / iOS) comes from .env.
 // Connection, capabilities, services, maxInstances and target-specific hooks come from this profile.
-const { capabilities, services, maxInstances, hooks, ...connection } = createRunProfile();
+const { capabilities, services, maxInstances, hooks, environment, ...connection } = createRunProfile();
 
 export const config: WebdriverIO.Config = {
     ...connection,
@@ -142,13 +143,23 @@ export const config: WebdriverIO.Config = {
     // Test reporter for stdout.
     // The only one supported by default is 'dot'
     // see also: https://webdriver.io/docs/dot-reporter
-    reporters: ['spec'],
+    reporters: [
+        'spec',
+        ['allure', {
+            outputDir: 'allure-results',
+            // Shows target, platform and device in the report, so Android and iOS runs are told apart.
+            reportedEnvironmentVars: environment,
+            // Tests attach named screenshots themselves; per-command steps would bury them in noise.
+            disableWebdriverStepsReporting: true,
+            disableWebdriverScreenshotsReporting: true,
+        }],
+    ],
 
     // Options to be passed to Mocha.
     // See the full list at http://mochajs.org/
     mochaOpts: {
         ui: 'bdd',
-        // iOS queries against Safari take about a second each; 60 s is not enough for the About test.
+        // iOS queries against Safari take about a second each; 60 s is not enough for the browser test.
         timeout: 120000
     },
 
@@ -221,7 +232,12 @@ export const config: WebdriverIO.Config = {
     /**
      * Function to be executed before a test (in Mocha/Jasmine) starts.
      */
-    beforeTest: hooks.beforeTest,
+    beforeTest: [
+        async function (test) {
+            await labelTestWithDevice(test);
+        },
+        ...(hooks.beforeTest ? [hooks.beforeTest] : []),
+    ],
     /**
      * Hook that gets executed _before_ a hook within the suite starts (e.g. runs before calling
      * beforeEach in Mocha)
@@ -247,7 +263,7 @@ export const config: WebdriverIO.Config = {
     afterTest: [
         async function (_test, _context, { passed }) {
             if (!passed) {
-                await browser.takeScreenshot();
+                await attachScreenshot('On failure');
             }
         },
         ...(hooks.afterTest ? [hooks.afterTest] : []),

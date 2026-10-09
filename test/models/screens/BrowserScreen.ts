@@ -7,11 +7,12 @@ import { BrowserToolbarWidget } from '../widgets/BrowserToolbarWidget.js';
 import type { SideMenuItem } from '../widgets/SideMenuWidget.js';
 
 /**
- * "About" opens the Sauce Labs website in an external browser (the Android default,
- * Safari on iOS), outside the app. That is why this screen extends BaseScreen and has
- * no top menu.
+ * External browser (the Android default, Safari on iOS) outside the app. The side menu's
+ * "About" item opens the Sauce Labs website in it. Being another app, it extends
+ * BaseScreen and has no top menu.
  */
-export class AboutScreen extends BaseScreen {
+export class BrowserScreen extends BaseScreen {
+    /** The side menu item that opens this screen. */
     public static readonly menuItem: SideMenuItem = 'ABOUT';
 
     public readonly toolbar = new BrowserToolbarWidget();

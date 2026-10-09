@@ -1,4 +1,4 @@
-import { driver } from '@wdio/globals';
+import { browser, driver } from '@wdio/globals';
 import { APP } from '../config/app.js';
 import { env, type Credentials } from '../config/env.js';
 import { Device } from '../models/core/Device.js';
@@ -18,8 +18,29 @@ export async function freshApp(): Promise<LoginScreen> {
     // version, including old ones a cloud may fall back to.
     const appId = driver.isIOS ? APP.ios.bundleId : APP.android.appPackage;
     await driver.terminateApp(appId);
-    await driver.activateApp(appId);
+    await bringToForeground(appId);
     return new LoginScreen().waitForLoaded();
+}
+
+/** Appium app state for "running in foreground". */
+const RUNNING_IN_FOREGROUND = 4;
+
+/**
+ * Activate the app until it is really in front. A single activateApp can lose a race with
+ * the app below it, e.g. a browser left behind by an earlier test that is still rotating.
+ */
+async function bringToForeground(appId: string): Promise<void> {
+    await driver.activateApp(appId);
+    await browser.waitUntil(
+        async () => {
+            if ((await driver.queryAppState(appId)) === RUNNING_IN_FOREGROUND) {
+                return true;
+            }
+            await driver.activateApp(appId);
+            return false;
+        },
+        { timeout: 20000, interval: 2000, timeoutMsg: `${appId} did not come to the foreground` },
+    );
 }
 
 /** Fresh app, logged in, on the products screen. */
