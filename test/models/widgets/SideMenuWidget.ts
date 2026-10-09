@@ -13,9 +13,8 @@ export type SideMenuItem =
     | 'RESET APP STATE';
 
 /**
- * A screen class reachable from the side menu. Each screen declares its own menu item,
- * so this widget never imports screens. That avoids a circular import, because those
- * screens contain the top menu, which opens this widget.
+ * A screen reachable from the side menu. Screens declare their own menu item, so this
+ * widget does not import them (they import it through the top menu: a circular import).
  */
 export interface SideMenuDestination<T extends BaseScreen> {
     new (): T;

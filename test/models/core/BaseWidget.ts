@@ -10,15 +10,13 @@ export interface WaitOptions {
 }
 
 /**
- * Base for every UI component. A widget is a reusable group of elements.
+ * Base for every UI component.
  *
- * - With a `root`, every child query is scoped to that element. The same widget class
- *   can then be reused for every instance, e.g. one ProductCardWidget per card.
- * - Without a `root`, queries run against the whole viewport. Use this for overlays
- *   that have no container locator, such as the side menu.
+ * - With a `root`, child queries are scoped to it, so one class serves every instance
+ *   (e.g. one ProductCardWidget per card).
+ * - Without a `root`, queries run against the whole screen (e.g. the side menu).
  *
- * Elements are returned as lazy chainable promises and are never cached, so every
- * access re-queries the app. Stale elements after rotation or navigation are not an issue.
+ * Elements are never cached, so they do not go stale after rotation or navigation.
  */
 export abstract class BaseWidget {
     constructor(private readonly rootLocator?: RootLocator) {}

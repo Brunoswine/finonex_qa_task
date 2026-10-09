@@ -23,12 +23,9 @@ async function browserStackExecutor(action: string, args: Record<string, unknown
 }
 
 /**
- * Report Mocha results to the BrowserStack dashboard, which otherwise leaves every session
- * "unmarked". The status belongs to the session, and WDIO opens one session per spec file,
- * so a session is marked failed when any of its tests failed. Each test start is annotated
- * on the session timeline, so the video and logs show where each test begins.
- *
- * wdio.conf.ts is evaluated in every worker, so each session gets its own `failures`.
+ * Report results to the BrowserStack dashboard, which otherwise leaves sessions "unmarked".
+ * There is one session per spec file, so it fails if any of its tests failed. Each test
+ * start is also annotated on the session timeline.
  */
 export function browserStackStatusHooks(): SessionHooks {
     const failures: string[] = [];

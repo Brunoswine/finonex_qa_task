@@ -1,5 +1,5 @@
 {
-  "name": "testovoe",
+  "name": "finonex-qa-task",
   "type": "module",
   "scripts": {
     "wdio": "wdio run ./wdio.conf.ts"

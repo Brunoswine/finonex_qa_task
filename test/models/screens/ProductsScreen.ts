@@ -2,7 +2,7 @@ import { browser } from '@wdio/globals';
 import type { ChainablePromiseElement } from 'webdriverio';
 import { AuthenticatedScreen } from '../core/AuthenticatedScreen.js';
 import type { SideMenuItem } from '../widgets/SideMenuWidget.js';
-import { ProductCardWidget, parsePrice, type ProductSummary } from '../widgets/ProductCardWidget.js';
+import { ProductCardWidget, type ProductSummary } from '../widgets/ProductCardWidget.js';
 import { SortModalWidget, type SortOption } from '../widgets/SortModalWidget.js';
 
 export class ProductsScreen extends AuthenticatedScreen {
@@ -53,19 +53,9 @@ export class ProductsScreen extends AuthenticatedScreen {
         await modal.select(option);
     }
 
-    /** Prices of every price label currently on screen, in display order. */
-    public async getVisiblePrices(): Promise<number[]> {
-        const prices: number[] = [];
-        for await (const label of this.elements('~test-Price')) {
-            prices.push(parsePrice(await label.getText()));
-        }
-        return prices;
-    }
-
     /**
-     * Every product in display order, read from the UI text. Scrolls the list until a
-     * swipe reveals no new product. Off-screen cards are missing from the Android tree
-     * and not displayed on iOS, so the whole catalog cannot be read without scrolling.
+     * Every product in display order, read from the UI text. Scrolls until a swipe reveals
+     * nothing new, because cards below the fold cannot be read without scrolling.
      */
     public async collectAllProducts(maxSwipes = 10): Promise<ProductSummary[]> {
         const byTitle = new Map<string, ProductSummary>();

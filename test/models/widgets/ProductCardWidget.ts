@@ -23,10 +23,8 @@ export const parsePrice = (label: string): number => {
  */
 export class ProductCardWidget extends BaseWidget {
     /**
-     * @param index zero-based position of the card in the tree. Android only has the
-     * cards on screen in the tree; iOS has the whole list, including off-screen cards.
-     * Both selectors match exactly one card, which keeps `$` strict without the
-     * blueprint's positional XPath. Class chain indexes start at 1.
+     * @param index zero-based position of the card in the tree: on-screen cards only on
+     * Android, the whole list on iOS. Class chain indexes start at 1.
      */
     constructor(public readonly index: number) {
         super(() => $(resolveLocator({

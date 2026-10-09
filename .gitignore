@@ -1,5 +1,7 @@
-.wdio/session/
 .env
-/node_modules
-allure-results/
+.wdio/session/
 allure-report/
+allure-results/
+docs/
+logs/
+node_modules/

@@ -5,13 +5,14 @@ import { Device } from '../models/core/Device.js';
 import { LoginScreen } from '../models/screens/LoginScreen.js';
 import type { ProductsScreen } from '../models/screens/ProductsScreen.js';
 
-
+/** Device in portrait, whatever the previous test left behind. */
 export async function portraitOrientation(): Promise<void> {
     // Set it unconditionally: on iOS getOrientation() reports the foreground app's UI, so a
     // portrait-locked app reads PORTRAIT while the device itself is still in landscape.
     await Device.setOrientation('PORTRAIT');
 }
 
+/** Restarted app on the login screen. */
 export async function freshApp(): Promise<LoginScreen> {
     await portraitOrientation();
     // Appium protocol commands rather than `mobile: terminateApp`: they work on every Appium

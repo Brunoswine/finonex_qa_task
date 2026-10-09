@@ -13,22 +13,21 @@ export interface RunProfile
     capabilities: WebdriverIO.Capabilities[];
     services: NonNullable<WebdriverIO.Config['services']>;
     maxInstances: number;
-    /** Target-specific WDIO hooks, e.g. simulator setup or reporting results to a cloud. */
+    /** Target-specific hooks, e.g. simulator setup or reporting results to BrowserStack. */
     hooks: SessionHooks;
-    /** Where the run happens, in words, for the Environment block of the Allure report. */
+    /** Shown in the Environment block of the Allure report. */
     environment: Record<string, string>;
 }
 
 const PROJECT_ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
-/** Capabilities that only depend on the platform, wherever the device is. */
+/** Capabilities shared by local and BrowserStack runs of a platform. */
 const PLATFORM_CAPABILITIES: Record<Platform, WebdriverIO.Capabilities> = {
     android: {
         platformName: 'Android',
         'appium:automationName': 'UiAutomator2',
         'appium:appPackage': APP.android.appPackage,
-        // The launcher is a splash screen that hands over to MainActivity at once, so the
-        // driver must not wait for the splash. Readiness is checked by LoginScreen instead.
+        // The launcher is a splash screen that closes right away; LoginScreen checks readiness instead.
         'appium:appWaitActivity': '*',
     },
     ios: {
@@ -40,7 +39,7 @@ const PLATFORM_CAPABILITIES: Record<Platform, WebdriverIO.Capabilities> = {
 
 const APP_EXTENSIONS: Record<Platform, readonly string[]> = {
     android: ['.apk'],
-    ios: ['.ipa'],
+    ios: ['.ipa', '.app'],
 };
 
 interface BrowserStackDevice {
@@ -50,12 +49,11 @@ interface BrowserStackDevice {
 }
 
 /**
- * Default device per platform; <PLATFORM>_BS_DEVICE_NAME / _PLATFORM_VERSION override it.
- * - iOS uses an iPhone without a notch: the app predates them, and the notch covers its header.
- * - Appium is pinned because BrowserStack defaults to 1.x, which lacks W3C action release
- *   (DELETE /actions) used by WDIO v10 gestures. Not every version exists for every device,
- *   and BrowserStack then falls back to 1.x silently: 3.x is not offered for the iPhone SE
- *   2022 / iOS 15, 2.19.0 is. Check the Appium log of a session after changing the device.
+ * Defaults, overridden by <PLATFORM>_BS_DEVICE_NAME / _PLATFORM_VERSION.
+ * - iPhone without a notch: the notch covers the header of this old app.
+ * - Appium is pinned: BrowserStack defaults to 1.x, which cannot release W3C actions used by
+ *   WDIO v10 gestures. If a version is missing for a device, BrowserStack silently falls back
+ *   to 1.x (3.x does not exist for the iPhone SE 2022), so check the session's Appium log.
  */
 const BROWSERSTACK_DEFAULT_DEVICE: Record<Platform, BrowserStackDevice> = {
     android: { deviceName: 'Samsung Galaxy S23', platformVersion: '13.0', appiumVersion: '3.5.2' },
@@ -85,9 +83,8 @@ function isIosSimulator(udid: string): boolean {
 }
 
 /**
- * Type through an English QWERTY keyboard. The simulator keeps the layout last used, and
- * XCUITest cannot type Latin text through e.g. a Russian layout: secure fields then
- * receive only part of the password and login fails.
+ * Switch the simulator to an English keyboard. It keeps the layout last used, and XCUITest
+ * cannot type Latin text through e.g. a Russian one: the password field gets one character.
  */
 async function useEnglishSimulatorKeyboard(): Promise<void> {
     await driver.execute('mobile: configureLocalization', { keyboard: { name: 'en_US', layout: 'QWERTY' } });
@@ -113,7 +110,7 @@ function localProfile(platform: Platform): RunProfile {
             ...(platform === 'android' ? { 'appium:noSign': true } : {}),
         }],
         services: [['appium', { command: 'appium' }]],
-        // One physical device cannot run sessions in parallel.
+        // One device cannot run sessions in parallel.
         maxInstances: 1,
     };
 }

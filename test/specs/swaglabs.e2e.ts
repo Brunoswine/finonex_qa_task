@@ -7,7 +7,7 @@ import { DrawingScreen } from '../models/screens/DrawingScreen.js';
 import { SortOption } from '../models/widgets/SortModalWidget.js';
 import { attachScreenshot, step } from '../reporting/allure.js';
 
-// The "Cool S" in one stroke. The bottom-middle line is drawn back over (Md -> Mc -> Q) to reach the lower-left part.
+// The "Cool S" doodle in one continuous stroke, as fractions of the canvas size.
 const COOL_S: readonly RelativePoint[] = [
     { x: 0.5, y: 0.25 },
     { x: 0.5, y: 0.45 },
@@ -17,7 +17,7 @@ const COOL_S: readonly RelativePoint[] = [
     { x: 0.5, y: 0.1 },
     { x: 0.2, y: 0.25 },
     { x: 0.2, y: 0.45 },
-    { x: 0.35, y: 0.5 }, 
+    { x: 0.35, y: 0.5 },
     { x: 0.5, y: 0.55 },
     { x: 0.5, y: 0.75 },
     { x: 0.5, y: 0.55 },
