@@ -1,6 +1,7 @@
 import { $ } from '@wdio/globals';
 import type { ChainablePromiseElement } from 'webdriverio';
 import { BaseWidget } from '../core/BaseWidget.js';
+import { resolveLocator } from '../core/Locator.js';
 
 export interface ProductSummary {
     title: string;
@@ -22,12 +23,16 @@ export const parsePrice = (label: string): number => {
  */
 export class ProductCardWidget extends BaseWidget {
     /**
-     * @param index zero-based position among the cards currently rendered on screen.
-     * UiSelector `instance()` gives one unique match per card, which keeps `$` strict
-     * without the blueprint's positional XPath.
+     * @param index zero-based position of the card in the tree. Android only has the
+     * cards on screen in the tree; iOS has the whole list, including off-screen cards.
+     * Both selectors match exactly one card, which keeps `$` strict without the
+     * blueprint's positional XPath. Class chain indexes start at 1.
      */
     constructor(public readonly index: number) {
-        super(() => $(`android=new UiSelector().description("test-Item").instance(${index})`));
+        super(() => $(resolveLocator({
+            android: `android=new UiSelector().description("test-Item").instance(${index})`,
+            ios: `-ios class chain:**/XCUIElementTypeOther[\`name == "test-Item"\`][${index + 1}]`,
+        })));
     }
 
     public get title(): ChainablePromiseElement {

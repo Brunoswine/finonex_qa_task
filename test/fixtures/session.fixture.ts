@@ -1,19 +1,24 @@
 import { driver } from '@wdio/globals';
-import { APP_ID } from '../config/app.js';
+import { APP } from '../config/app.js';
 import { env, type Credentials } from '../config/env.js';
-import { LoginScreen } from '../pageobjects/screens/LoginScreen.js';
-import type { ProductsScreen } from '../pageobjects/screens/ProductsScreen.js';
+import { Device } from '../models/core/Device.js';
+import { LoginScreen } from '../models/screens/LoginScreen.js';
+import type { ProductsScreen } from '../models/screens/ProductsScreen.js';
 
-/*
- * Pytest-style fixtures: plain async functions that bring the app into a known state
- * and return the screen to start from. Larger fixtures build on smaller ones, the way
- * pytest fixtures request other fixtures. Call them from a test or a beforeEach hook.
- */
 
-/** Cold-start the app (also brings it back from an external browser) on the login screen. */
+export async function portraitOrientation(): Promise<void> {
+    // Set it unconditionally: on iOS getOrientation() reports the foreground app's UI, so a
+    // portrait-locked app reads PORTRAIT while the device itself is still in landscape.
+    await Device.setOrientation('PORTRAIT');
+}
+
 export async function freshApp(): Promise<LoginScreen> {
-    await driver.execute('mobile: terminateApp', { appId: APP_ID });
-    await driver.execute('mobile: activateApp', { appId: APP_ID });
+    await portraitOrientation();
+    // Appium protocol commands rather than `mobile: terminateApp`: they work on every Appium
+    // version, including old ones a cloud may fall back to.
+    const appId = driver.isIOS ? APP.ios.bundleId : APP.android.appPackage;
+    await driver.terminateApp(appId);
+    await driver.activateApp(appId);
     return new LoginScreen().waitForLoaded();
 }
 

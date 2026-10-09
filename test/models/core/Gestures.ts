@@ -19,6 +19,16 @@ export async function getRect(element: ChainablePromiseElement): Promise<Rect> {
     return { x, y, width, height };
 }
 
+/** Single-finger tap at viewport coordinates. */
+export async function tap(x: number, y: number): Promise<void> {
+    await browser
+        .action('pointer', { parameters: { pointerType: 'touch' } })
+        .move({ x: Math.round(x), y: Math.round(y), duration: 0 })
+        .down()
+        .up()
+        .perform();
+}
+
 /**
  * Drag one finger through `points` inside `target`, using a W3C touch pointer action
  * (`browser.action('pointer')`), not the removed Appium TouchAction API.

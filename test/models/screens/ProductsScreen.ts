@@ -9,7 +9,11 @@ export class ProductsScreen extends AuthenticatedScreen {
     public static readonly menuItem: SideMenuItem = 'ALL ITEMS';
 
     public get title(): ChainablePromiseElement {
-        return this.element('android=new UiSelector().text("PRODUCTS")');
+        return this.element({
+            android: 'android=new UiSelector().text("PRODUCTS")',
+            // iOS also has a container named "PRODUCTS"; only the label is a StaticText.
+            ios: '-ios predicate string:type == "XCUIElementTypeStaticText" AND name == "PRODUCTS"',
+        });
     }
 
     public get productList(): ChainablePromiseElement {
@@ -33,7 +37,8 @@ export class ProductsScreen extends AuthenticatedScreen {
         return new ProductCardWidget(index);
     }
 
-    public async visibleProductCards(): Promise<ProductCardWidget[]> {
+    /** Cards in the tree: the on-screen ones on Android, all of them on iOS. */
+    public async renderedProductCards(): Promise<ProductCardWidget[]> {
         const count = await this.elements('~test-Item').length;
         return Array.from({ length: count }, (_, index) => this.productCard(index));
     }
@@ -59,14 +64,14 @@ export class ProductsScreen extends AuthenticatedScreen {
 
     /**
      * Every product in display order, read from the UI text. Scrolls the list until a
-     * swipe reveals no new product. Only the visible rows are in the accessibility tree,
-     * so the whole catalog cannot be read without scrolling.
+     * swipe reveals no new product. Off-screen cards are missing from the Android tree
+     * and not displayed on iOS, so the whole catalog cannot be read without scrolling.
      */
     public async collectAllProducts(maxSwipes = 10): Promise<ProductSummary[]> {
         const byTitle = new Map<string, ProductSummary>();
         for (let swipes = 0; swipes <= maxSwipes; swipes++) {
             const knownBefore = byTitle.size;
-            for (const card of await this.visibleProductCards()) {
+            for (const card of await this.renderedProductCards()) {
                 const summary = await card.readSummary();
                 if (summary && !byTitle.has(summary.title)) {
                     byTitle.set(summary.title, summary);

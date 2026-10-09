@@ -1,5 +1,6 @@
 import { $, $$ } from '@wdio/globals';
 import type { ChainablePromiseElement, ChainablePromiseArray } from 'webdriverio';
+import { resolveLocator, type Locator } from './Locator.js';
 
 /** Lazily resolves the element a widget is scoped to. */
 export type RootLocator = () => ChainablePromiseElement;
@@ -30,13 +31,15 @@ export abstract class BaseWidget {
     }
 
     /** Query exactly one element in the widget's scope (strict: throws on >1 match). */
-    protected element(selector: string): ChainablePromiseElement {
+    protected element(locator: Locator): ChainablePromiseElement {
+        const selector = resolveLocator(locator);
         const root = this.root;
         return root ? root.$(selector) : $(selector);
     }
 
     /** Query all matching elements in the widget's scope. */
-    protected elements(selector: string): ChainablePromiseArray {
+    protected elements(locator: Locator): ChainablePromiseArray {
+        const selector = resolveLocator(locator);
         const root = this.root;
         return root ? root.$$(selector) : $$(selector);
     }

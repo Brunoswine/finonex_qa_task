@@ -17,7 +17,11 @@ export type SortOption = (typeof SortOption)[keyof typeof SortOption];
 /** Modal opened by the products screen's "Sort By" button. */
 export class SortModalWidget extends BaseWidget {
     public option(option: SortOption | 'Cancel'): ChainablePromiseElement {
-        return this.element(`android=new UiSelector().text("${option}")`);
+        return this.element({
+            android: `android=new UiSelector().text("${option}")`,
+            // iOS repeats "Cancel" on a non-accessible wrapper; the tappable option is the accessible one.
+            ios: `-ios predicate string:name == "${option}" AND accessible == 1`,
+        });
     }
 
     protected get trait(): ChainablePromiseElement {

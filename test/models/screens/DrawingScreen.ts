@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type { ChainablePromiseElement } from 'webdriverio';
 import { AuthenticatedScreen } from '../core/AuthenticatedScreen.js';
 import { drawPath, type RelativePoint } from '../core/Gestures.js';
+import { resolveLocator } from '../core/Locator.js';
 import type { SideMenuItem } from '../widgets/SideMenuWidget.js';
 
 export class DrawingScreen extends AuthenticatedScreen {
@@ -13,12 +14,15 @@ export class DrawingScreen extends AuthenticatedScreen {
     }
 
     /**
-     * The canvas is the screen's WebView. Once the page loads, Chromium adds a nested
-     * node of the same class for the web document, so `instance(0)` picks the outer
-     * native view. The blueprint's `//android.widget.Image` does not appear on Android.
+     * The canvas is the screen's WebView. Both platforms nest more WebView nodes for the
+     * web document inside it, so the first (outer) match is taken. The blueprint's
+     * `//android.widget.Image` does not appear on Android.
      */
     public get canvas(): ChainablePromiseElement {
-        return this.screen.$('android=new UiSelector().className("android.webkit.WebView").instance(0)');
+        return this.screen.$(resolveLocator({
+            android: 'android=new UiSelector().className("android.webkit.WebView").instance(0)',
+            ios: '-ios class chain:**/XCUIElementTypeWebView[1]',
+        }));
     }
 
     public get clearButton(): ChainablePromiseElement {

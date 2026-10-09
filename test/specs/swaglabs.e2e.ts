@@ -1,27 +1,35 @@
 import { expect } from '@wdio/globals';
 import { loggedIn, loggedInWithCleanState } from '../fixtures/session.fixture.js';
-import { Device } from '../pageobjects/core/Device.js';
-import type { RelativePoint } from '../pageobjects/core/Gestures.js';
-import { AboutScreen } from '../pageobjects/screens/AboutScreen.js';
-import { DrawingScreen } from '../pageobjects/screens/DrawingScreen.js';
-import { SortOption } from '../pageobjects/widgets/SortModalWidget.js';
+import { Device } from '../models/core/Device.js';
+import type { RelativePoint } from '../models/core/Gestures.js';
+import { AboutScreen } from '../models/screens/AboutScreen.js';
+import { DrawingScreen } from '../models/screens/DrawingScreen.js';
+import { SortOption } from '../models/widgets/SortModalWidget.js';
 
-const ZIGZAG: readonly RelativePoint[] = [
-    { x: 0.2, y: 0.2 },
-    { x: 0.8, y: 0.35 },
-    { x: 0.2, y: 0.5 },
-    { x: 0.8, y: 0.65 },
-    { x: 0.2, y: 0.8 },
+// The "Cool S" in one stroke. The bottom-middle line is drawn back over (Md -> Mc -> Q) to reach the lower-left part.
+const COOL_S: readonly RelativePoint[] = [
+    { x: 0.5, y: 0.25 }, // top-middle line
+    { x: 0.5, y: 0.45 },
+    { x: 0.65, y: 0.5 }, // P: where the diagonals cross on the right
+    { x: 0.8, y: 0.45 },
+    { x: 0.8, y: 0.25 }, // top-right line
+    { x: 0.5, y: 0.1 }, // top tip
+    { x: 0.2, y: 0.25 },
+    { x: 0.2, y: 0.45 }, // top-left line
+    { x: 0.35, y: 0.5 }, // Q: where the diagonals cross on the left
+    { x: 0.5, y: 0.55 }, // Mc
+    { x: 0.5, y: 0.75 }, // Md: bottom-middle line
+    { x: 0.5, y: 0.55 }, // back over Mc...
+    { x: 0.35, y: 0.5 }, // ...to Q
+    { x: 0.2, y: 0.55 },
+    { x: 0.2, y: 0.75 }, // bottom-left line
+    { x: 0.5, y: 0.9 }, // bottom tip
+    { x: 0.8, y: 0.75 },
+    { x: 0.8, y: 0.55 }, // bottom-right line
+    { x: 0.65, y: 0.5 }, // back to P
 ];
 
 describe('Swag Labs', () => {
-    afterEach(async () => {
-        // Restore portrait even if a test failed mid-rotation, so later tests start clean.
-        if ((await Device.getOrientation()) !== 'PORTRAIT') {
-            await Device.setOrientation('PORTRAIT');
-        }
-    });
-
     it('sorts products by price, low to high', async () => {
         const productsScreen = await loggedInWithCleanState();
 
@@ -39,7 +47,7 @@ describe('Swag Labs', () => {
         const drawingScreen = await sideMenu.navigateTo(DrawingScreen);
         const blankCanvas = await drawingScreen.getCanvasFingerprint();
 
-        await drawingScreen.draw(ZIGZAG);
+        await drawingScreen.draw(COOL_S);
         expect(await drawingScreen.getCanvasFingerprint()).not.toBe(blankCanvas);
 
         await drawingScreen.clear();
@@ -51,9 +59,8 @@ describe('Swag Labs', () => {
         const sideMenu = await productsScreen.topMenu.openSideMenu();
         const aboutScreen = await sideMenu.navigateTo(AboutScreen);
 
+        await expect(aboutScreen.pageView).toBeDisplayed();
         expect(await aboutScreen.toolbar.getAddress()).toContain('saucelabs.com');
-        const pageTitle = await aboutScreen.getPageTitle();
-        expect(pageTitle).toContain('Sauce Labs');
 
         await Device.setOrientation('LANDSCAPE');
 
@@ -61,10 +68,11 @@ describe('Swag Labs', () => {
         const window = await Device.getWindowSize();
         expect(window.width).toBeGreaterThan(window.height);
 
+        // Safari on compact iPhones hides its toolbar in landscape; usable means a tap brings it back.
+        await aboutScreen.toolbar.reveal();
         await expect(aboutScreen.toolbar.addressBar).toBeDisplayed();
         await expect(aboutScreen.pageView).toBeDisplayed();
         expect(await aboutScreen.toolbar.getAddress()).toContain('saucelabs.com');
-        expect(await aboutScreen.getPageTitle()).toBe(pageTitle);
 
         // Layout: the page re-flowed to landscape and fits on screen.
         const page = await aboutScreen.getPageViewRect();

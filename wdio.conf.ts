@@ -1,6 +1,11 @@
-import { APP_ID } from './test/config/app.js';
+import { createRunProfile } from './test/config/capabilities.factory.js';
+
+// Where and on what to run (local Appium / BrowserStack, Android / iOS) comes from .env.
+// Connection, capabilities, services, maxInstances and target-specific hooks come from this profile.
+const { capabilities, services, maxInstances, hooks, ...connection } = createRunProfile();
 
 export const config: WebdriverIO.Config = {
+    ...connection,
     //
     // ====================
     // Runner Configuration
@@ -8,8 +13,6 @@ export const config: WebdriverIO.Config = {
     // WebdriverIO supports running e2e tests as well as unit and component tests.
     runner: 'local',
     tsConfigPath: './tsconfig.json',
-    
-    port: 4723,
     //
     // ==================
     // Specify Test Files
@@ -48,7 +51,7 @@ export const config: WebdriverIO.Config = {
     // and 30 processes will get spawned. The property handles how many capabilities
     // from the same test should run tests.
     //
-    maxInstances: 10,
+    maxInstances,
     //
     // If you have trouble getting all important capabilities together, check out the
     // Sauce Labs platform configurator - a great tool to configure your capabilities:
@@ -62,15 +65,7 @@ export const config: WebdriverIO.Config = {
     //     'appium:platformVersion': '12.0',
     //     'appium:automationName': 'UiAutomator2'
     // }],
-    capabilities:
-        [{
-        "platformName": "Android",
-        "appium:automationName": "UiAutomator2",
-        "appium:app": "/Users/yakushev/Downloads/sample-app.apk",
-        "appium:appPackage": APP_ID,
-        "appium:appActivity": "com.swaglabsmobileapp.MainActivity",
-        "appium:noSign": true
-        }],
+    capabilities,
 
     //
     // ===================
@@ -119,7 +114,7 @@ export const config: WebdriverIO.Config = {
     // Services take over a specific job you don't want to take care of. They enhance
     // your test setup with almost no effort. Unlike plugins, they don't add new
     // commands. Instead, they hook themselves up into the test process.
-    services: [['appium', { command: 'appium' }]],
+    services,
     //
     // The DevTools service shows a live dashboard of your run and can record a
     // replayable trace of every test. Install @wdio/devtools-service, then add
@@ -153,7 +148,8 @@ export const config: WebdriverIO.Config = {
     // See the full list at http://mochajs.org/
     mochaOpts: {
         ui: 'bdd',
-        timeout: 60000
+        // iOS queries against Safari take about a second each; 60 s is not enough for the About test.
+        timeout: 120000
     },
 
     //
@@ -208,8 +204,7 @@ export const config: WebdriverIO.Config = {
      * @param {Array.<String>} specs        List of spec file paths that are to be run
      * @param {object}         browser      instance of created browser/device session
      */
-    // before: function (capabilities, specs) {
-    // },
+    before: hooks.before,
     /**
      * Runs before a WebdriverIO command gets executed.
      * @param {string} commandName hook command name
@@ -226,8 +221,7 @@ export const config: WebdriverIO.Config = {
     /**
      * Function to be executed before a test (in Mocha/Jasmine) starts.
      */
-    // beforeTest: function (test, context) {
-    // },
+    beforeTest: hooks.beforeTest,
     /**
      * Hook that gets executed _before_ a hook within the suite starts (e.g. runs before calling
      * beforeEach in Mocha)
@@ -250,11 +244,14 @@ export const config: WebdriverIO.Config = {
      * @param {boolean} result.passed    true if test has passed, otherwise false
      * @param {object}  result.retries   information about spec related retries, e.g. `{ attempts: 0, limit: 0 }`
      */
-    afterTest: async function(test, context, { error, result, duration, passed, retries }) {
-        if (!passed) {
-            await browser.takeScreenshot();
-        }
-    },
+    afterTest: [
+        async function (_test, _context, { passed }) {
+            if (!passed) {
+                await browser.takeScreenshot();
+            }
+        },
+        ...(hooks.afterTest ? [hooks.afterTest] : []),
+    ],
 
 
     /**
@@ -279,8 +276,7 @@ export const config: WebdriverIO.Config = {
      * @param {Array.<Object>} capabilities list of capabilities details
      * @param {Array.<String>} specs List of spec file paths that ran
      */
-    // after: function (result, capabilities, specs) {
-    // },
+    after: hooks.after,
     /**
      * Gets executed right after terminating the webdriver session.
      * @param {object} config wdio configuration object
