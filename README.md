@@ -98,4 +98,4 @@ Results of all runs are collected in one report. To start over: `rm -rf allure-r
 - **Appium version on BrowserStack.** BrowserStack starts Appium 1.x unless told otherwise, and 1.x does not support the W3C actions that WebdriverIO v10 uses for gestures. The config pins Appium 3.5.2 for Android and 2.19.0 for iOS, because 3.x is not available for the iPhone SE 2022. If a pinned version is missing for a device, BrowserStack silently falls back to 1.x: gestures then fail with `"actions" with method "DELETE"`.
 - **Unstable runs.**
   - Pixel 8 (Android 14) on BrowserStack: the app sometimes does not come back after a restart, and the home screen stays open. The app targets Android 9, which is the likely cause. Galaxy S23 and Pixel 7 on Android 13 are stable.
-  - Safari on the iOS Simulator: the browser test is flacky on simulator now cannot find Safari's page view, depending on the state Safari was left in. On BrowserStack or Real Device the same test passes.
+  - Safari on the iOS Simulator: the browser is flacky on simulator now. Test cannot find Safari's page view, depending on the state Safari was left in. On BrowserStack or Real Device the same test passes.
